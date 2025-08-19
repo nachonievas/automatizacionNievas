@@ -12,7 +12,7 @@ from dateutil.relativedelta import relativedelta
 import random
 
 # 🚀 CONFIGURACIÓN FINAL
-MODO_TEST = True
+MODO_TEST = False
 NUMERO_TEST = "5493516570658"
 LIMITAR_A = 0
 
@@ -33,7 +33,7 @@ print("3 - Holando con Cupón + todas las demás compañías (todas las formas d
 opcion = input("Ingresá 1, 2 o 3: ").strip()
 
 # LEER EXCEL
-archivo = "clientesActualizado.xlsx"
+archivo = "clientes.xlsx"
 df_estado = pd.read_excel(archivo, sheet_name="Estado de cuenta")
 df_polizas = pd.read_excel(archivo, sheet_name="Polizas", dtype={"telefono": str})
 df_estado.columns = df_estado.columns.str.strip().str.lower()
@@ -65,18 +65,9 @@ def limpiar_telefono(numero):
 def obtener_mes_espanol(fecha, compania):
     try:
         fecha = pd.to_datetime(fecha)
-        if "holando" in compania.lower():
-            return fecha.strftime("%B").capitalize()
-        else:
-            fecha_sumada = fecha + relativedelta(months=1)
-            return fecha_sumada.strftime("%B").capitalize()
+        return fecha.strftime("%B").capitalize()
     except:
         return "próximos días"
-
-def limpiar_emojis(texto):
-    if isinstance(texto, str):
-        return texto.encode('ascii', 'ignore').decode('ascii')
-    return texto
 
 # Carpeta con fecha actual
 fecha_actual = datetime.now().strftime("%Y-%m-%d")
@@ -99,9 +90,9 @@ for i in range(len(df_estado)):
     refacturacion = str(fila_estado.get("refacturación", "")).strip()
     estado = str(fila_estado.get("estados", "")).strip().upper()
     forma_pago = str(fila_estado.get("forma de pago", "")).strip().lower()
-
     compania_lower = compania.lower()
 
+    # --- FILTROS ---
     if refacturacion.lower() != "trimestral" or estado != "SI":
         continue
 
@@ -109,9 +100,13 @@ for i in range(len(df_estado)):
         continue
     if opcion == "2" and not (compania_lower == "holando" and forma_pago == "tarjeta"):
         continue
-    if opcion == "3" and not ((compania_lower == "holando" and forma_pago == "cupon") or compania_lower != "holando"):
-        continue
+    if opcion == "3":
+        if "galeno" in compania_lower:  # Excluir Galeno siempre
+            continue
+        if not ((compania_lower == "holando" and forma_pago == "cupon") or (compania_lower != "holando")):
+            continue
 
+    # --- ERRORES DE DATOS ---
     error = ""
     if not dni: error += "DNI vacío; "
     if not telefono: error += "Teléfono vacío o no numérico; "
@@ -120,19 +115,30 @@ for i in range(len(df_estado)):
     if not compania: error += "Compañía vacía; "
     if pd.isna(fecha): error += "Fecha flyer vacía; "
 
+    # --- MENSAJE ---
     mes = obtener_mes_espanol(fecha, compania)
+    if forma_pago == "cupon":
+        try:
+            fecha_vencimiento = pd.to_datetime(fecha).strftime("%d/%m/%Y")
+        except:
+            fecha_vencimiento = "próximos días"
+        mensaje = (
+            f"Hola {nombre}, "
+            f"Te recordamos que el día *{fecha_vencimiento}* se vencerá tu póliza de *{compania}*, "
+            f"correspondiente al seguro de *{riesgo.title()}*."
+            f"❗Tu póliza está al día!\n"
+            f"✅¡Gracias por confiar en nosotros!"
+        )
+    else:
+        mensaje = (
+            f"Hola {nombre}, "
+            f"Te recordamos que en el mes de *{mes}* se debitará tu póliza de *{compania}*, "
+            f"correspondiente al seguro de *{riesgo.title()}*."
+            f"❗Tu póliza está al día!\n"
+            f"✅¡Gracias por confiar en nosotros!"
+        )
 
-    mensaje_whatsapp = (
-        f"Hola {nombre} 👋, este mensaje originalmente sería enviado al número *{telefono}*."
-        f"📅 En el mes de *{mes}* se debitará tu póliza de *{compania}*, correspondiente al seguro de *{riesgo.title()}*."
-        f"🔁 Refacturación: *{refacturacion.lower()}*."
-        f"✅ ¡Gracias por confiar en nosotros!"
-    )
-
-    mensaje_excel = (
-        f"Hola {nombre}, este mensaje originalmente seria enviado al numero *{telefono}*, En el mes de {mes} se debitara tu poliza de {compania}, correspondiente al seguro de {riesgo.title()}. Refacturacion: {refacturacion.lower()}. Gracias por confiar en nosotros."
-    )
-
+    # --- AGREGAR A LISTA ---
     mensajes.append({
         "index": i + 1,
         "telefono": telefono,
@@ -143,11 +149,11 @@ for i in range(len(df_estado)):
         "forma_pago": forma_pago,
         "refacturacion": refacturacion,
         "estado": estado,
-        "mensaje": mensaje_excel,
-        "mensaje_whatsapp": mensaje_whatsapp,
+        "mensaje": mensaje,
         "error": error.strip()
     })
 
+    # --- PENDIENTES ---
     if estado != "SI" and refacturacion == "trimestral":
         pendientes.append({
             "index": i + 1,
@@ -161,12 +167,12 @@ for i in range(len(df_estado)):
             "motivo": "Pendientes"
         })
 
+# Guardar Excel
 if pendientes:
     df_pendientes = pd.DataFrame(pendientes)
     df_pendientes.to_excel(f"refacturacionTrimestral/{fecha_actual}/pendientes.xlsx", index=False)
 
 df_verificacion = pd.DataFrame(mensajes)
-df_verificacion["mensaje"] = df_verificacion["mensaje"].apply(limpiar_emojis)
 df_verificacion.to_excel(f"refacturacionTrimestral/{fecha_actual}/enviados.xlsx", index=False)
 
 log_envios = []
@@ -198,11 +204,15 @@ try:
 
             input_box = driver.find_element(By.XPATH, "//div[@contenteditable='true'][@data-tab='10']")
             input_box.click()
-            input_box.send_keys(m["mensaje_whatsapp"])
+            input_box.send_keys(m["mensaje"])
             input_box.send_keys(Keys.ENTER)
 
             print(f"✅ Mensaje #{m['index']} enviado a {destino}")
-            tiempo_espera = random.uniform(7, 15)
+            if m["index"] % random.randint(9, 14) == 0: ## Este fue el ultimo cambio que hice
+                # Pausa más larga cada 10 mensajes
+                tiempo_espera = random.uniform(60, 120)  # pausa más larga cada 10 mensajes // final
+            else:
+                tiempo_espera = random.uniform(10, 25)
             time.sleep(tiempo_espera)
 
             log_envios.append({
@@ -222,7 +232,5 @@ try:
             })
 
 finally:
-    df_log = pd.DataFrame(log_envios)
-    df_log["mensaje"] = df_log["mensaje"].apply(limpiar_emojis)
-    df_log.to_excel(f"refacturacionTrimestral/{fecha_actual}/log_enviosTrimestrales.xlsx", index=False)
+    pd.DataFrame(log_envios).to_excel(f"refacturacionTrimestral/{fecha_actual}/log_enviosTrimestrales.xlsx", index=False)
     print("📄 Log de envíos guardado.")
