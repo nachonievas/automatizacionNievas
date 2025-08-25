@@ -33,7 +33,7 @@ print("3 - Holando con Cupón + todas las demás compañías (todas las formas d
 opcion = input("Ingresá 1, 2 o 3: ").strip()
 
 # LEER EXCEL
-archivo = "clientes.xlsx"
+archivo = "clientesActualizado.xlsx"
 df_estado = pd.read_excel(archivo, sheet_name="Estado de cuenta")
 df_polizas = pd.read_excel(archivo, sheet_name="Polizas", dtype={"telefono": str})
 df_estado.columns = df_estado.columns.str.strip().str.lower()
@@ -83,7 +83,7 @@ for i in range(len(df_estado)):
 
     dni = limpiar_dni(fila_poliza.get("dni", ""))
     telefono = limpiar_telefono(fila_poliza.get("telefono", ""))
-    riesgo = str(fila_poliza.get("riesgo", "")).strip().lower()
+    bien_asegurado = str(fila_poliza.get("bien asegurado", "")).strip()
     nombre = str(fila_estado.get("apellido y nombre", "")).title()
     compania = str(fila_estado.get("compañía", "")).strip()
     fecha = fila_estado.get("flyer", "")
@@ -110,7 +110,7 @@ for i in range(len(df_estado)):
     error = ""
     if not dni: error += "DNI vacío; "
     if not telefono: error += "Teléfono vacío o no numérico; "
-    if not riesgo: error += "Riesgo vacío; "
+    if not bien_asegurado: error += "bien asegurado vacio; "
     if not nombre: error += "Nombre vacío; "
     if not compania: error += "Compañía vacía; "
     if pd.isna(fecha): error += "Fecha flyer vacía; "
@@ -125,7 +125,7 @@ for i in range(len(df_estado)):
         mensaje = (
             f"Hola {nombre}, "
             f"Te recordamos que el día *{fecha_vencimiento}* se vencerá tu póliza de *{compania}*, "
-            f"correspondiente al seguro de *{riesgo.title()}*."
+            f"correspondiente al seguro de *{bien_asegurado}*."
             f"❗Tu póliza está al día!\n"
             f"✅¡Gracias por confiar en nosotros!"
         )
@@ -133,7 +133,7 @@ for i in range(len(df_estado)):
         mensaje = (
             f"Hola {nombre}, "
             f"Te recordamos que en el mes de *{mes}* se debitará tu póliza de *{compania}*, "
-            f"correspondiente al seguro de *{riesgo.title()}*."
+            f"correspondiente al seguro de *{bien_asegurado}*."
             f"❗Tu póliza está al día!\n"
             f"✅¡Gracias por confiar en nosotros!"
         )
@@ -143,7 +143,7 @@ for i in range(len(df_estado)):
         "index": i + 1,
         "telefono": telefono,
         "compañia": compania,
-        "riesgo": riesgo,
+        "bien asegurado": bien_asegurado,
         "nombre": nombre,
         "dni": dni,
         "forma_pago": forma_pago,
@@ -161,7 +161,7 @@ for i in range(len(df_estado)):
             "dni": dni,
             "telefono": telefono,
             "compañía": compania,
-            "riesgo": riesgo,
+            "bien asegurado": bien_asegurado,
             "estado": estado,
             "refacturación": refacturacion,
             "motivo": "Pendientes"
@@ -210,7 +210,7 @@ try:
             print(f"✅ Mensaje #{m['index']} enviado a {destino}")
             if m["index"] % random.randint(9, 14) == 0: ## Este fue el ultimo cambio que hice
                 # Pausa más larga cada 10 mensajes
-                tiempo_espera = random.uniform(60, 120)  # pausa más larga cada 10 mensajes // final
+                tiempo_espera = random.uniform(60, 120)  # pausa más larga cada 10 mensajes //
             else:
                 tiempo_espera = random.uniform(10, 25)
             time.sleep(tiempo_espera)
