@@ -1,24 +1,18 @@
-# venv y cachés
+# salidas generadas (carpetas con fecha)
+refacturacionTrimestral/*/
+
+# NO ignores los scripts .py en ese folder
+!refacturacionTrimestral/*.py
+
+# (el resto igual)
 .venv/
 __pycache__/
 *.pyc
-
-# config privada
 .env
-
-# salidas generadas (subcarpetas con fecha) — NO el .py
-refacturacionTrimestral/*/
-!refacturacionTrimestral/*.py
-
-# IDE / OS
 .idea/
 .vscode/
 .DS_Store
 
-# Excels reales (ajustá según los nombres que uses)
+# Excels reales en raíz (ajustá si cambian de nombre)
 clientesActualizado.xlsx
 clientesActualizadoCopia.xlsx
-
-# (Opcional) si más adelante movés los datos a /data, usá:
-# data/*.xlsx
-# !data/clientesActualizado_ejemplo.xlsx
