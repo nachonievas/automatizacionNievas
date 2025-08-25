@@ -1,0 +1,24 @@
+# venv y cachés
+.venv/
+__pycache__/
+*.pyc
+
+# config privada
+.env
+
+# salidas generadas (subcarpetas con fecha) — NO el .py
+refacturacionTrimestral/*/
+!refacturacionTrimestral/*.py
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+
+# Excels reales (ajustá según los nombres que uses)
+clientesActualizado.xlsx
+clientesActualizadoCopia.xlsx
+
+# (Opcional) si más adelante movés los datos a /data, usá:
+# data/*.xlsx
+# !data/clientesActualizado_ejemplo.xlsx
